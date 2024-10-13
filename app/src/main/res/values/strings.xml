@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">ListingApp</string>
+    <string name="battery_text">Battery</string>
 </resources>
