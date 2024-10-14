@@ -22,6 +22,11 @@ kotlinxCoroutinesCore = "1.8.1"
 
 squareOkhttp = "4.12.0"
 squareRetrofit = "2.11.0"
+junitJupiter = "5.8.1"
+ioMockk = "1.13.13"
+coroutinesTest = "1.9.0"
+versionRobolectric = "4.13"
+junitKtx = "1.2.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -50,6 +55,11 @@ hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hiltA
 androidx-hilt-navigation-compose = { module = "androidx.hilt:hilt-navigation-compose", version.ref = "hiltNavigationCompose" }
 
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinxCoroutinesCore" }
+
+robolectric = { module = "org.robolectric:robolectric", version.ref = "versionRobolectric"}
+io-mockk = { module = "io.mockk:mockk", version.ref = "ioMockk"}
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutinesTest"}
+androidx-junit-ktx = { group = "androidx.test.ext", name = "junit-ktx", version.ref = "junitKtx" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
