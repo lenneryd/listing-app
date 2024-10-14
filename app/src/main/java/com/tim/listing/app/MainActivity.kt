@@ -7,8 +7,11 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,27 +22,42 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.ripple.rememberRipple
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.drawscope.Fill
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.compose.AppTheme
+import com.tim.listing.app.ui.navigation.Argument
+import com.tim.listing.app.ui.navigation.Route
+import com.tim.listing.app.ui.navigation.asRouteDefinition
+import com.tim.listing.app.ui.navigation.get
+import com.tim.listing.app.ui.navigation.getAsLong
+import com.tim.listing.app.ui.navigation.resolved
 import com.tim.listing.app.ui.theme.batteryColor
 import com.tim.listing.app.ui.vm.ListingViewModel
 import dagger.hilt.android.AndroidEntryPoint
@@ -50,18 +68,107 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            AppTheme {
-
-                val vm = hiltViewModel<ListingViewModel>()
-                val uiState by vm.uiState().collectAsState(ListingViewModel.UiState.Loading)
-                ScooterScreen(uiState)
-            }
+            MainActivityScreen { finish() }
         }
     }
 }
 
 @Composable
-fun ScooterScreen(state: ListingViewModel.UiState) {
+fun MainActivityScreen(onCloseApp: () -> Unit) {
+    val navController = rememberNavController()
+
+    AppTheme {
+        Scaffold(
+            topBar = { NavigationTopBar(navController, onCloseApp) }
+        ) { padding ->
+            ScooterNavHost(padding, navController)
+        }
+
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun NavigationTopBar(navController: NavHostController, onCloseApp: () -> Unit) {
+    CenterAlignedTopAppBar(
+        title = {
+            Text(
+                "Scooter Listing",
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.primary
+            )
+        },
+        navigationIcon = {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = "Back Arrow",
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier
+                    .padding(start = 8.dp)
+                    .size(32.dp)
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = rememberRipple(bounded = false)
+                    ) {
+                        if (!navController.navigateUp()) {
+                            onCloseApp()
+                        }
+                    }
+            )
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            titleContentColor = MaterialTheme.colorScheme.onSecondaryContainer
+        )
+    )
+}
+
+@Composable
+fun ScooterNavHost(padding: PaddingValues, navController: NavHostController) {
+    NavHost(
+        navController = navController,
+        startDestination = Route.ScooterList.asRouteDefinition(),
+        modifier = Modifier.padding(padding)
+    ) {
+        composable(Route.ScooterList.value) {
+            ScooterScreen(onShowDetails = { id ->
+                navController.navigate(Route.ScooterDetails.resolved(id = id))
+            })
+        }
+
+        composable(Route.ScooterDetails.asRouteDefinition(),
+            arguments = listOf(
+                navArgument(Argument.Id.value) {}
+            )
+        ) { backstack ->
+            ScooterDetailsScreen(backstack.getAsLong(Argument.Id))
+        }
+    }
+}
+
+@Composable
+fun ScooterDetailsScreen(id: Long) {
+    ScooterDetailsScreenComposable()
+}
+
+@Composable
+fun ScooterDetailsScreenComposable() {
+    Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+        Text("Details page", modifier = Modifier.padding(innerPadding))
+    }
+}
+
+@Composable
+fun ScooterScreen(onShowDetails: (Long) -> Unit) {
+    val vm = hiltViewModel<ListingViewModel>()
+    val uiState by vm.uiState().collectAsState(ListingViewModel.UiState.Loading)
+    ScooterScreenComposable(uiState, onShowDetails = onShowDetails)
+}
+
+@Composable
+fun ScooterScreenComposable(state: ListingViewModel.UiState, onShowDetails: (Long) -> Unit) {
     Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
         when (state) {
             ListingViewModel.UiState.Error -> Text("Failed to return scooters")
@@ -69,7 +176,8 @@ fun ScooterScreen(state: ListingViewModel.UiState) {
             is ListingViewModel.UiState.ScooterDetails -> TODO()
             is ListingViewModel.UiState.ScooterList -> ScooterList(
                 state,
-                modifier = Modifier.padding(innerPadding)
+                modifier = Modifier.padding(innerPadding),
+                onShowDetails
             )
         }
     }
@@ -77,12 +185,11 @@ fun ScooterScreen(state: ListingViewModel.UiState) {
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ScooterList(state: ListingViewModel.UiState.ScooterList, modifier: Modifier) {
+fun ScooterList(state: ListingViewModel.UiState.ScooterList, modifier: Modifier, onClicked: (Long) -> Unit) {
     Column {
-        Text(state.name)
         LazyColumn(modifier) {
             items(items = state.scooters, key = { item -> item.id }) { item ->
-                ScooterItem(item, modifier = Modifier.animateItemPlacement())
+                ScooterItem(item, modifier = Modifier.animateItemPlacement(), onClicked = onClicked)
                 HorizontalDivider()
             }
         }
@@ -90,7 +197,7 @@ fun ScooterList(state: ListingViewModel.UiState.ScooterList, modifier: Modifier)
 }
 
 @Composable
-fun ScooterItem(scooter: ListingViewModel.ListScooterUi, modifier: Modifier) {
+fun ScooterItem(scooter: ListingViewModel.ListScooterUi, modifier: Modifier, onClicked: (Long) -> Unit) {
     Row(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
@@ -101,6 +208,7 @@ fun ScooterItem(scooter: ListingViewModel.ListScooterUi, modifier: Modifier) {
                 shape = RoundedCornerShape(4.dp)
             )
             .padding(all = 8.dp)
+            .clickable { onClicked(scooter.id) }
     ) {
         Text(scooter.name, style = MaterialTheme.typography.titleMedium)
         scooter.rides?.let { rides ->
@@ -145,7 +253,14 @@ fun BatteryComposable(batteryState: ListingViewModel.BatteryState.HasBattery) {
 @Composable
 fun NoBatteryComposable() {
     Column(horizontalAlignment = Alignment.End) {
-        Icon(painterResource(R.drawable.battery_off), contentDescription = "No Battery Icon", Modifier.padding(end = 6.dp).size(24.dp), tint = MaterialTheme.colorScheme.error)
+        Icon(
+            painterResource(R.drawable.battery_off),
+            contentDescription = "No Battery Icon",
+            Modifier
+                .padding(end = 6.dp)
+                .size(24.dp),
+            tint = MaterialTheme.colorScheme.error
+        )
         Text("No Battery", style = MaterialTheme.typography.labelSmall)
     }
 }
@@ -157,7 +272,7 @@ fun sweepAngle(percent: Float) = 360.0f * percent
 @Composable
 fun ScooterScreenPreview() {
     AppTheme {
-        ScooterScreen(
+        ScooterScreenComposable(
             state = ListingViewModel.UiState.ScooterList(
                 name = "Stockholm",
                 scooters = listOf(
@@ -190,7 +305,16 @@ fun ScooterScreenPreview() {
                         800
                     )
                 )
-            )
+            ),
+            onShowDetails = { }
         )
+    }
+}
+
+@Preview
+@Composable
+fun ScooterDetailsScreenPreview() {
+    AppTheme {
+        ScooterDetailsScreenComposable()
     }
 }
