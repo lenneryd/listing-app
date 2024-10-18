@@ -1,4 +1,4 @@
-package com.example.compose
+package com.tim.listing.app.ui.theme
 import androidx.compose.ui.graphics.Color
 
 val primaryLight = Color(0xFF904A45)
@@ -13,7 +13,7 @@ val tertiaryLight = Color(0xFF725B2E)
 val onTertiaryLight = Color(0xFFFFFFFF)
 val tertiaryContainerLight = Color(0xFFFEDEA6)
 val onTertiaryContainerLight = Color(0xFF261900)
-val errorLight = Color(0xFFBA1A1A)
+val errorLight = Color(0xFFD03C3C)
 val onErrorLight = Color(0xFFFFFFFF)
 val errorContainerLight = Color(0xFFFFDAD6)
 val onErrorContainerLight = Color(0xFF410002)

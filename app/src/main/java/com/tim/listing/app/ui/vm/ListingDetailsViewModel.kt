@@ -25,6 +25,7 @@ class ListingDetailsViewModel @Inject constructor(
     private val uiState: MutableStateFlow<UiDetailsState> = MutableStateFlow(UiDetailsState.Loading)
     fun uiState(): Flow<UiDetailsState> = uiState
 
+
     val id = savedStateHandle.get<Long>(Argument.Id.value)
         ?: throw IllegalArgumentException("$TAG requires non-null ${Argument.Id.value} parameter.")
 
