@@ -1,5 +1,6 @@
 package com.tim.listing.app.ui.vm
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.tim.listing.app.domain.usecase.ScooterUseCase
@@ -14,29 +15,30 @@ import kotlin.math.roundToInt
 @HiltViewModel
 class ListingViewModel @Inject constructor(private val useCase: ScooterUseCase) : ViewModel() {
     companion object {
-        private val thresholdUnavailableBattery = 0.1
+        private val TAG = ListingViewModel::class.java.simpleName
     }
 
-    private val uiState: MutableStateFlow<UiState> = MutableStateFlow(UiState.Loading)
-    fun uiState(): Flow<UiState> = uiState
+    private val uiState: MutableStateFlow<UiListState> = MutableStateFlow(UiListState.Loading)
+    fun uiState(): Flow<UiListState> = uiState
 
     init {
         viewModelScope.launch {
             val result = useCase.getScooters().first()
 
-            when {
-                result.isSuccess -> {
-                    uiState.value = UiState.ScooterList(
-                        name = result.getOrThrow().name,
-                        scooters = result.getOrThrow().scooters.map { scooter ->
-                            val batteryState = if (scooter.battery < thresholdUnavailableBattery) {
-                                BatteryState.OutOfBattery
-                            } else {
-                                BatteryState.HasBattery(
-                                    scooter.battery,
-                                    "${(scooter.battery * 100).roundToInt()}%"
-                                )
-                            }
+            result.fold(
+                onSuccess = { model ->
+                    uiState.value = UiListState.ScooterList(
+                        name = model.name,
+                        scooters = model.scooters.map { scooter ->
+                            val batteryState =
+                                if (scooter.battery < Constants.thresholdUnavailableBattery) {
+                                    BatteryState.OutOfBattery
+                                } else {
+                                    BatteryState.HasBattery(
+                                        scooter.battery,
+                                        "${(scooter.battery * 100).roundToInt()}%"
+                                    )
+                                }
                             ListScooterUi(
                                 id = scooter.id,
                                 name = scooter.name,
@@ -53,30 +55,27 @@ class ListingViewModel @Inject constructor(private val useCase: ScooterUseCase) 
                             )
                         }
                     )
+                },
+                onFailure = { e ->
+                    uiState.value = UiListState.Error
+                    Log.w(TAG, "Error loading scooters: ${e.message}")
+
+                    e.printStackTrace()
                 }
 
-                result.isFailure -> {
-                    uiState.value = UiState.Error
-                }
-            }
+            )
         }
     }
 
 
-    sealed class UiState {
-        data object Loading : UiState()
-        data object Error : UiState()
+    sealed class UiListState {
+        data object Loading : UiListState()
+        data object Error : UiListState()
 
         data class ScooterList(
             val name: String,
             val scooters: List<ListScooterUi>
-        ) : UiState()
-
-        data class ScooterDetails(
-            val name: String,
-            val id: Long,
-            val rides: Long?
-        ) : UiState()
+        ) : UiListState()
     }
 
     sealed class BatteryState {

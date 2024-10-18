@@ -6,7 +6,7 @@ import retrofit2.http.GET
 
 interface ScooterApi {
 
-    // https://storage.googleapis.com/voi-android-technical-interview/scooters.json
+    // Url example: https://storage.googleapis.com/voi-android-technical-interview/scooters.json
 
     @GET("scooters.json")
     suspend fun getScooters(): Response<ScooterResponseEntity>

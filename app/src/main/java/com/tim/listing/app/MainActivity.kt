@@ -47,18 +47,18 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.example.compose.AppTheme
+import com.tim.listing.app.ui.theme.AppTheme
 import com.tim.listing.app.ui.navigation.Argument
 import com.tim.listing.app.ui.navigation.Route
 import com.tim.listing.app.ui.navigation.asRouteDefinition
-import com.tim.listing.app.ui.navigation.get
-import com.tim.listing.app.ui.navigation.getAsLong
 import com.tim.listing.app.ui.navigation.resolved
 import com.tim.listing.app.ui.theme.batteryColor
+import com.tim.listing.app.ui.vm.ListingDetailsViewModel
 import com.tim.listing.app.ui.vm.ListingViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -130,7 +130,7 @@ fun ScooterNavHost(padding: PaddingValues, navController: NavHostController) {
     NavHost(
         navController = navController,
         startDestination = Route.ScooterList.asRouteDefinition(),
-        modifier = Modifier.padding(padding)
+        modifier = Modifier.background(MaterialTheme.colorScheme.primary).padding(padding)
     ) {
         composable(Route.ScooterList.value) {
             ScooterScreen(onShowDetails = { id ->
@@ -140,43 +140,61 @@ fun ScooterNavHost(padding: PaddingValues, navController: NavHostController) {
 
         composable(Route.ScooterDetails.asRouteDefinition(),
             arguments = listOf(
-                navArgument(Argument.Id.value) {}
+                navArgument(Argument.Id.value) {
+                    type = NavType.LongType
+                }
             )
-        ) { backstack ->
-            ScooterDetailsScreen(backstack.getAsLong(Argument.Id))
+        ) {
+            // Argument.Id provided to SavedStateHandle.
+            ScooterDetailsScreen()
         }
     }
 }
 
 @Composable
-fun ScooterDetailsScreen(id: Long) {
-    ScooterDetailsScreenComposable()
+fun ScooterDetailsScreen() {
+    val vm = hiltViewModel<ListingDetailsViewModel>()
+    val uiState by vm.uiState().collectAsState(ListingDetailsViewModel.UiDetailsState.Loading)
+    ScooterDetailsScreenComposable(uiState)
 }
 
 @Composable
-fun ScooterDetailsScreenComposable() {
+fun ScooterDetailsScreenComposable(state: ListingDetailsViewModel.UiDetailsState) {
     Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-        Text("Details page", modifier = Modifier.padding(innerPadding))
+        when (state) {
+            ListingDetailsViewModel.UiDetailsState.Error -> Text("Failed to show specific scooter.", modifier = Modifier.padding(innerPadding))
+            ListingDetailsViewModel.UiDetailsState.Loading -> CircularProgressIndicator(modifier = Modifier.padding(innerPadding))
+            is ListingDetailsViewModel.UiDetailsState.ScooterDetails -> ScooterDetails(
+                state,
+                modifier = Modifier.padding(innerPadding)
+            )
+        }
+    }
+}
+
+@Composable
+fun ScooterDetails(state: ListingDetailsViewModel.UiDetailsState.ScooterDetails, modifier: Modifier) {
+    Scaffold(modifier = modifier.fillMaxSize()) {
+        Text("Details page for scooter: ${state.name}")
     }
 }
 
 @Composable
 fun ScooterScreen(onShowDetails: (Long) -> Unit) {
     val vm = hiltViewModel<ListingViewModel>()
-    val uiState by vm.uiState().collectAsState(ListingViewModel.UiState.Loading)
+    val uiState by vm.uiState().collectAsState(ListingViewModel.UiListState.Loading)
     ScooterScreenComposable(uiState, onShowDetails = onShowDetails)
 }
 
 @Composable
-fun ScooterScreenComposable(state: ListingViewModel.UiState, onShowDetails: (Long) -> Unit) {
+fun ScooterScreenComposable(state: ListingViewModel.UiListState, onShowDetails: (Long) -> Unit) {
     Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
         when (state) {
-            ListingViewModel.UiState.Error -> Text("Failed to return scooters")
-            ListingViewModel.UiState.Loading -> CircularProgressIndicator()
-            is ListingViewModel.UiState.ScooterDetails -> TODO()
-            is ListingViewModel.UiState.ScooterList -> ScooterList(
+            ListingViewModel.UiListState.Error -> Text("Failed to return scooters")
+            ListingViewModel.UiListState.Loading -> CircularProgressIndicator()
+            is ListingViewModel.UiListState.ScooterList -> ScooterList(
                 state,
-                modifier = Modifier.padding(innerPadding),
+                modifier = Modifier.fillMaxSize().padding(innerPadding),
                 onShowDetails
             )
         }
@@ -185,9 +203,9 @@ fun ScooterScreenComposable(state: ListingViewModel.UiState, onShowDetails: (Lon
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ScooterList(state: ListingViewModel.UiState.ScooterList, modifier: Modifier, onClicked: (Long) -> Unit) {
-    Column {
-        LazyColumn(modifier) {
+fun ScooterList(state: ListingViewModel.UiListState.ScooterList, modifier: Modifier, onClicked: (Long) -> Unit) {
+    Column(modifier) {
+        LazyColumn {
             items(items = state.scooters, key = { item -> item.id }) { item ->
                 ScooterItem(item, modifier = Modifier.animateItemPlacement(), onClicked = onClicked)
                 HorizontalDivider()
@@ -273,7 +291,7 @@ fun sweepAngle(percent: Float) = 360.0f * percent
 fun ScooterScreenPreview() {
     AppTheme {
         ScooterScreenComposable(
-            state = ListingViewModel.UiState.ScooterList(
+            state = ListingViewModel.UiListState.ScooterList(
                 name = "Stockholm",
                 scooters = listOf(
                     ListingViewModel.ListScooterUi(
@@ -315,6 +333,12 @@ fun ScooterScreenPreview() {
 @Composable
 fun ScooterDetailsScreenPreview() {
     AppTheme {
-        ScooterDetailsScreenComposable()
+        ScooterDetailsScreenComposable(
+            ListingDetailsViewModel.UiDetailsState.ScooterDetails(
+                "Scooter B4",
+                4,
+                12
+            )
+        )
     }
 }
