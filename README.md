@@ -21,8 +21,12 @@ It is in no way meant to be an application for real world use.
 
 ## Building
 Repository should be possible to import as an Android Studio project. **Android Studio Ladybug | 2024.2.1** was used during development.
+
 App can be built with `./gradlew clean assmbleDebug` or `./gradlew clean assembleRelease` or using Android Studio. 
 Tests can be run through Android studio or by running `./gradlew clean :app:testDebugUnitTest`
+
+## Releases
+Releases are done manually and uploaded to github. They are available under releases.
 
 # Known issues
 - When running in darkmode the default crossfade animation of the Compose Navigation library is a little too intense when going between screens.
