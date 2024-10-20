@@ -27,3 +27,8 @@ Tests can be run through Android studio or by running `./gradlew clean :app:test
 # Known issues
 - When running in darkmode the default crossfade animation of the Compose Navigation library is a little too intense when going between screens.
 - Does not currently have support for rotation. App is locked into portrait. List screen works in landscape mode but Details screen would need some adjustments to work well in landscape.
+
+# Gallery
+
+<img src="Screenshot.png" alt="Screenshot" width="300"/>
+<img src="Screenshot_darkmode.png" alt="Screenshot darkmode" width="300"/>
