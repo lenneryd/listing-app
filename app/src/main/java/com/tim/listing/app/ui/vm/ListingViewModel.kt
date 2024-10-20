@@ -10,7 +10,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import kotlin.math.roundToInt
 
 @HiltViewModel
 class ListingViewModel @Inject constructor(private val useCase: ScooterUseCase) : ViewModel() {
@@ -30,27 +29,11 @@ class ListingViewModel @Inject constructor(private val useCase: ScooterUseCase) 
                     uiState.value = UiListState.ScooterList(
                         name = model.name,
                         scooters = model.scooters.map { scooter ->
-                            val batteryState =
-                                if (scooter.battery < Constants.thresholdUnavailableBattery) {
-                                    BatteryState.OutOfBattery
-                                } else {
-                                    BatteryState.HasBattery(
-                                        scooter.battery,
-                                        "${(scooter.battery * 100).roundToInt()}%"
-                                    )
-                                }
                             ListScooterUi(
                                 id = scooter.id,
                                 name = scooter.name,
-                                batteryState = batteryState,
-                                availability = scooter.let {
-                                    when {
-                                        scooter.needFix -> AvailabilityState.BrokenUnavailable
-                                        scooter.inUse -> AvailabilityState.WorkingUnavailable
-                                        batteryState is BatteryState.OutOfBattery -> AvailabilityState.OutOfBattery
-                                        else -> AvailabilityState.WorkingAvailable
-                                    }
-                                },
+                                batteryState = scooter.toBatteryState(),
+                                availability = scooter.toAvailabilityState(),
                                 scooter.totalRides
                             )
                         }
@@ -76,18 +59,6 @@ class ListingViewModel @Inject constructor(private val useCase: ScooterUseCase) 
             val name: String,
             val scooters: List<ListScooterUi>
         ) : UiListState()
-    }
-
-    sealed class BatteryState {
-        data class HasBattery(val battery: Float, val batteryText: String) : BatteryState()
-        data object OutOfBattery : BatteryState()
-    }
-
-    sealed class AvailabilityState {
-        data object WorkingAvailable : AvailabilityState()
-        data object WorkingUnavailable : AvailabilityState()
-        data object BrokenUnavailable : AvailabilityState()
-        data object OutOfBattery : AvailabilityState()
     }
 
     data class ListScooterUi(

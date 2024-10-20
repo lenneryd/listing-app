@@ -1,4 +1,24 @@
 <resources>
     <string name="app_name">ListingApp</string>
     <string name="battery_text">Battery</string>
+    <string name="top_bar_title">Scooters</string>
+    <string name="show_unavailable">Show unavail.</string>
+
+    <!-- Details Screen -->
+    <string name="details_screen_error">Failed to show specific scooter.</string>
+    <string name="details_screen_warning_mechanic">This scooter requires attention by a mechanic before it is usable.</string>
+    <string name="details_screen_warning_battery">This scooter does not have enough battery to be used.</string>
+    <string name="details_screen_warning_in_use">This scooter is currently being used by another rider.</string>
+    <string name="details_battery_label">Battery:</string>
+    <string name="details_battery_insufficient">"Insufficient</string>
+    <string name="details_rides_label">Rides:</string>
+    <string name="details_rides_not_available">Not available</string>
+    <string name="details_available_label">Available:</string>
+    <string name="details_rent_button">"Rent this scooter"</string>
+
+    <!-- List Screen -->
+    <string name="list_screen_error">Failed to show scooters</string>
+    <string name="list_screen_item_rides_postfix">rides</string>
+    <string name="list_screen_item_no_battery">No Battery</string>
+    <string name="list_screen_item_unavailable">Unavail.</string>
 </resources>

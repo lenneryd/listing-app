@@ -1,6 +1,5 @@
 package com.tim.listing.app.ui.compose
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -17,39 +16,33 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.tim.listing.app.LocalShowUnavailable
 import com.tim.listing.app.R
 import com.tim.listing.app.ui.theme.AppTheme
-import com.tim.listing.app.ui.theme.batteryColor
 import com.tim.listing.app.ui.theme.batteryHigh
-import com.tim.listing.app.ui.theme.primaryContainerLight
-import com.tim.listing.app.ui.vm.ListingDetailsViewModel
+import com.tim.listing.app.ui.vm.AvailabilityState
+import com.tim.listing.app.ui.vm.BatteryState
 import com.tim.listing.app.ui.vm.ListingViewModel
+import com.tim.listing.app.ui.vm.toBatteryText
 
 @Composable
 fun ScooterListScreenComposable(state: ListingViewModel.UiListState, onShowDetails: (Long) -> Unit) {
     Scaffold(modifier = Modifier.fillMaxSize()) { paddingValues ->
         when (state) {
-            ListingViewModel.UiListState.Error -> Text("Failed to return scooters")
-            ListingViewModel.UiListState.Loading -> CircularProgressIndicator()
+            ListingViewModel.UiListState.Error -> ErrorScreen(stringResource(R.string.list_screen_error), paddingValues)
+            ListingViewModel.UiListState.Loading -> LoadingScreen(paddingValues)
             is ListingViewModel.UiListState.ScooterList -> ScooterList(
                 state,
                 modifier = Modifier
@@ -61,6 +54,8 @@ fun ScooterListScreenComposable(state: ListingViewModel.UiListState, onShowDetai
     }
 }
 
+
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ScooterList(state: ListingViewModel.UiListState.ScooterList, modifier: Modifier, onClicked: (Long) -> Unit) {
@@ -69,7 +64,7 @@ fun ScooterList(state: ListingViewModel.UiListState.ScooterList, modifier: Modif
             LazyColumn {
                 items(
                     items = state.scooters.filter {
-                        showUnavailable || it.availability is ListingViewModel.AvailabilityState.WorkingAvailable
+                        showUnavailable || it.availability is AvailabilityState.WorkingAvailable
                     },
                     key = { item -> item.id }) { item ->
                     ScooterItem(item, modifier = Modifier.animateItemPlacement(), onClicked = onClicked)
@@ -82,7 +77,7 @@ fun ScooterList(state: ListingViewModel.UiListState.ScooterList, modifier: Modif
 
 @Composable
 fun ScooterItem(scooter: ListingViewModel.ListScooterUi, modifier: Modifier, onClicked: (Long) -> Unit) {
-    val available = scooter.availability is ListingViewModel.AvailabilityState.WorkingAvailable
+    val available = scooter.availability is AvailabilityState.WorkingAvailable
     Row(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
@@ -106,7 +101,7 @@ fun ScooterItem(scooter: ListingViewModel.ListScooterUi, modifier: Modifier, onC
                 Row {
                     Icon(painterResource(R.drawable.bike), contentDescription = "Rides Icon", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
                     Text(
-                        "${scooter.rides} rides", style = MaterialTheme.typography.titleSmall, modifier = Modifier
+                        "${scooter.rides} ${stringResource(R.string.list_screen_item_rides_postfix)}", style = MaterialTheme.typography.titleSmall, modifier = Modifier
                             .width(80.dp)
                             .padding(horizontal = 6.dp)
                     )
@@ -117,12 +112,12 @@ fun ScooterItem(scooter: ListingViewModel.ListScooterUi, modifier: Modifier, onC
 
         // Right edge icons
         when (scooter.availability) {
-            is ListingViewModel.AvailabilityState.OutOfBattery -> NoBatteryComposable()
-            is ListingViewModel.AvailabilityState.BrokenUnavailable -> BrokenComposable()
+            is AvailabilityState.OutOfBattery -> NoBatteryComposable()
+            is AvailabilityState.BrokenUnavailable -> BrokenComposable()
             else -> {
                 when (scooter.batteryState) {
-                    is ListingViewModel.BatteryState.HasBattery -> BatteryComposable(scooter.batteryState)
-                    is ListingViewModel.BatteryState.OutOfBattery -> NoBatteryComposable()
+                    is BatteryState.HasBattery -> ListItemBatteryDisplay(scooter.batteryState)
+                    is BatteryState.OutOfBattery -> NoBatteryComposable()
                 }
             }
         }
@@ -130,26 +125,13 @@ fun ScooterItem(scooter: ListingViewModel.ListScooterUi, modifier: Modifier, onC
 }
 
 @Composable
-fun BatteryComposable(batteryState: ListingViewModel.BatteryState.HasBattery) {
+fun ListItemBatteryDisplay(state: BatteryState.HasBattery) {
     Column(
         horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.Center, modifier = Modifier
             .fillMaxHeight()
             .width(84.dp)
     ) {
-        Canvas(modifier = Modifier
-            .size(28.dp)
-            .clip(CircleShape)
-            .padding(all = 4.dp), onDraw = {
-
-            drawCircle(color = primaryContainerLight)
-            drawArc(
-                color = batteryColor(batteryState.battery),
-                startAngle = 270f,
-                sweepAngle = sweepAngle(batteryState.battery),
-                useCenter = true,
-                style = Fill
-            )
-        })
+        BatteryArcComposable(state.battery)
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
                 painterResource(R.drawable.battery),
@@ -157,7 +139,7 @@ fun BatteryComposable(batteryState: ListingViewModel.BatteryState.HasBattery) {
                 modifier = Modifier.size(12.dp),
                 tint = MaterialTheme.colorScheme.onPrimaryContainer
             )
-            Text(batteryState.batteryText, style = MaterialTheme.typography.labelSmall)
+            Text("${state.toBatteryText()}%", style = MaterialTheme.typography.labelSmall)
         }
     }
 }
@@ -177,7 +159,7 @@ fun NoBatteryComposable() {
                 .size(24.dp),
             tint = MaterialTheme.colorScheme.error
         )
-        Text("No Battery", style = MaterialTheme.typography.labelSmall)
+        Text(stringResource(R.string.list_screen_item_no_battery), style = MaterialTheme.typography.labelSmall)
     }
 }
 
@@ -189,7 +171,7 @@ fun BrokenComposable() {
             .width(84.dp)
     ) {
         Icon(painterResource(R.drawable.tools), contentDescription = "Broken icon", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(28.dp))
-        Text("Unavail.", style = MaterialTheme.typography.labelSmall)
+        Text(stringResource(R.string.list_screen_item_unavailable), style = MaterialTheme.typography.labelSmall)
     }
 }
 
@@ -207,29 +189,29 @@ fun ScooterScreenPreview() {
                     ListingViewModel.ListScooterUi(
                         4,
                         "Scooter B4",
-                        ListingViewModel.BatteryState.HasBattery(0.4f, "40%"),
-                        ListingViewModel.AvailabilityState.WorkingAvailable,
+                        BatteryState.HasBattery(0.4f),
+                        AvailabilityState.WorkingAvailable,
                         12
                     ),
                     ListingViewModel.ListScooterUi(
                         8,
                         "Scooter D8",
-                        ListingViewModel.BatteryState.HasBattery(0.64f, "64%"),
-                        ListingViewModel.AvailabilityState.WorkingAvailable,
+                        BatteryState.HasBattery(0.64f),
+                        AvailabilityState.WorkingAvailable,
                         35
                     ),
                     ListingViewModel.ListScooterUi(
                         7,
                         "Scooter D7",
-                        ListingViewModel.BatteryState.HasBattery(0.9f, "90%"),
-                        ListingViewModel.AvailabilityState.WorkingAvailable,
+                        BatteryState.HasBattery(0.9f),
+                        AvailabilityState.WorkingAvailable,
                         800
                     ),
                     ListingViewModel.ListScooterUi(
                         12,
                         "Scooter G7",
-                        ListingViewModel.BatteryState.OutOfBattery,
-                        ListingViewModel.AvailabilityState.WorkingAvailable,
+                        BatteryState.OutOfBattery,
+                        AvailabilityState.WorkingAvailable,
                         800
                     )
                 )
@@ -241,14 +223,20 @@ fun ScooterScreenPreview() {
 
 @Preview
 @Composable
-fun ScooterDetailsScreenPreview() {
+fun ScooterScreenLoadingPreview() {
     AppTheme {
-        ScooterDetailsScreenComposable(
-            ListingDetailsViewModel.UiDetailsState.ScooterDetails(
-                "Scooter B4",
-                4,
-                12
-            )
-        )
+        ScooterListScreenComposable(
+            state = ListingViewModel.UiListState.Loading
+        ) {}
+    }
+}
+
+@Preview
+@Composable
+fun ScooterScreenErrorPreview() {
+    AppTheme {
+        ScooterListScreenComposable(
+            state = ListingViewModel.UiListState.Error
+        ) {}
     }
 }

@@ -37,7 +37,9 @@ class ListingDetailsViewModel @Inject constructor(
                     uiState.value = UiDetailsState.ScooterDetails(
                         model.name,
                         model.id,
-                        model.totalRides
+                        model.totalRides,
+                        availabilityState = model.toAvailabilityState(),
+                        battery = model.toBatteryState()
                     )
                 },
                 onFailure = { e ->
@@ -57,7 +59,9 @@ class ListingDetailsViewModel @Inject constructor(
         data class ScooterDetails(
             val name: String,
             val id: Long,
-            val rides: Long?
+            val rides: Long?,
+            val availabilityState: AvailabilityState,
+            val battery: BatteryState
         ) : UiDetailsState()
     }
 }

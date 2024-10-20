@@ -4,6 +4,7 @@ import com.tim.listing.app.data.api.ScooterApi
 import com.tim.listing.app.data.api.toResult
 import com.tim.listing.app.domain.model.ScooterResponseModel
 import com.tim.listing.app.domain.model.toScooterResponse
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import javax.inject.Inject

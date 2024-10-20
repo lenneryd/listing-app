@@ -10,8 +10,8 @@ val batteryHigh = Green300
 val batteryMedium = Orange200
 val batteryLow = DeepOrange400
 
-fun batteryColor(percent: Float) = when {
-    percent > 0.8 -> batteryHigh
-    percent > 0.5 -> batteryMedium
+fun batteryColor(fraction: Float) = when {
+    fraction > 0.8 -> batteryHigh
+    fraction > 0.5 -> batteryMedium
     else -> batteryLow
 }

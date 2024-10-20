@@ -1,7 +1,6 @@
 package com.tim.listing.app.ui.navigation
 
 import android.net.Uri
-import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavDestination
 
 enum class Argument(val value: String) {
@@ -35,8 +34,3 @@ fun Route.resolved(): String = asRouteDefinition()
 // This one requires an ID, and will therefore need to be resolved separately by adding the ID to the path.
 fun Route.ScooterDetails.resolved(id: Long): String =
     Uri.decode(routeDefinitionBuilder().toString()).replace("{${Argument.Id.value}}", id.toString())
-
-fun NavBackStackEntry.get(argument: Argument): String? = arguments?.getString(argument.value)
-fun NavBackStackEntry.getAsLong(argument: Argument): Long =
-    arguments?.getString(argument.value)?.toLong()
-        ?: throw IllegalArgumentException("Argument [$argument] cannot be null, must be Long")
